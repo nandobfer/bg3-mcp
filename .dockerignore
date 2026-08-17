@@ -1,0 +1,13 @@
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+target
+*.log
+.idea
+.vscode
+aicontext
+AGENTS.md
+README.md
+docker-compose.yaml
