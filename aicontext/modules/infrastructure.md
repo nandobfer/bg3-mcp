@@ -1,55 +1,58 @@
 # Modulo: Infraestrutura
 
-## Objetivo
+## Estado
 
-Fornecer comportamento operacional compartilhado sem acoplar os dominios de
-wiki e mods.
+**Implementado** para a fonte bg3.wiki.
 
 ## Cliente HTTP
 
-- Um cliente reutilizavel por processo.
-- URL-base configuravel por fonte.
-- `User-Agent` configuravel.
-- Timeout por requisicao.
-- Limite de tamanho de resposta.
-- Redirects restritos e observaveis.
+`MediaWikiClient` possui um `reqwest::Client` reutilizavel, URL-base fixa,
+`User-Agent` configuravel e timeout global. A Action API recebe POST form-urlencoded;
+a REST API recebe GET.
 
-## Concorrencia
-
-Cada fonte deve possuir limite de concorrencia. A configuracao inicial usa
-`BG3_MCP_MAX_CONCURRENCY`, mas a implementacao pode evoluir para limites por
-fonte quando houver mais de uma integracao real.
+O cliente nao limita bytes nem trunca respostas. JSON e texto sao agregados em
+memoria, conforme decisao explicita do projeto.
 
 ## Cache
 
-O cache inicial deve ser em memoria, salvo se o perfil de uso demonstrar a
-necessidade de persistencia. Chaves precisam considerar operacao, parametros
-normalizados e fonte. Nao armazene erros transitorios como sucesso.
+`moka::future::Cache` armazena apenas respostas bem-sucedidas:
 
-Politica final de tamanho, eviction e cache negativo: **TBD**.
+- TTL padrao: 300 segundos.
+- Capacidade padrao: 512 entradas.
+- Chave: operacao, URL e parametros normalizados.
+- Erros, timeouts e respostas HTTP rejeitadas nao sao armazenados.
 
-## Retry
+Uma entrada pode ter qualquer tamanho, portanto a capacidade por quantidade nao
+representa limite previsivel de memoria.
 
-- Apenas operacoes idempotentes.
-- Backoff exponencial limitado.
-- Respeitar `Retry-After`.
-- Retry para `429`, timeout de conexao e falhas `5xx` selecionadas.
-- Sem retry para input invalido, autenticacao, permissao ou not found.
+## Concorrencia e retry
 
-## Erros
+Um `tokio::Semaphore` limita chamadas externas; o default e uma requisicao por
+vez. Operacoes de consulta sao idempotentes mesmo quando enviadas por POST.
 
-Erros internos devem preservar causa para logs e observabilidade, enquanto o
-contrato MCP recebe uma categoria segura e acionavel. Corpos externos e stack
-traces nao devem aparecer para o cliente.
+Ha retry para `429`, `maxlag` e `5xx`. O cliente respeita `Retry-After` em
+segundos e usa backoff exponencial com jitter. O default permite duas novas
+tentativas. Timeout e resposta malformada sao normalizados sem expor detalhes.
 
-## Tracing
+## Rate limit MCP
 
-Registre operacao, fonte, status, latencia, cache hit/miss e categoria de erro.
-Nao registre credenciais, headers de autorizacao ou conteudo integral retornado
-pelas fontes.
+O rate limit usa uma janela fixa de 60 segundos por IP observado no socket. O
+default e 60 requisicoes. A tabela e limpa durante o uso para remover janelas
+expiradas.
+
+O servidor nao confia em headers de proxy. Atras de um reverse proxy, todos os
+clientes podem compartilhar o mesmo bucket.
+
+## Erros e logs
+
+`WikiError` separa input invalido, not found, timeout, indisponibilidade,
+rejeicao HTTP, erro da API e resposta inesperada. `public_message()` remove
+status, codigos internos e causas.
+
+Logs registram inicializacao e erros do servidor, nunca bodies integrais,
+credenciais ou conteudo da wiki.
 
 ## Health check
 
-`GET /health` deve verificar apenas a saude do processo. Nao consulte a
-bg3.wiki, pois indisponibilidade externa nao deve reiniciar continuamente um
-processo saudavel.
+`GET /health` devolve nome, versao e status do processo sem consultar a fonte.
+Indisponibilidade da bg3.wiki nao torna o container unhealthy.

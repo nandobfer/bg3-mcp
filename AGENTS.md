@@ -18,10 +18,9 @@ Antes de implementar, leia nesta ordem:
 
 ## 2. Estado atual
 
-O projeto esta em fase inicial. A documentacao define o comportamento esperado,
-mas nao deve ser tratada como evidencia de que uma funcionalidade ja foi
-implementada. Preserve nos documentos a distincao entre `verificado`,
-`planejado` e `TBD`.
+O servidor MCP e a integracao de leitura com a bg3.wiki estao implementados. O
+dominio de mods continua pendente. Preserve nos documentos a distincao entre
+`implementado`, `verificado`, `planejado` e `TBD`.
 
 ## 3. Regras nao negociaveis
 
@@ -30,7 +29,9 @@ implementada. Preserve nos documentos a distincao entre `verificado`,
   externas, salvo em testes ou invariantes justificadas.
 - Mantenha wiki e mods como dominios separados. Nao crie uma abstracao comum
   sem reutilizacao concreta.
-- Valide todos os inputs MCP e imponha limites de tamanho, pagina e quantidade.
+- Valide todos os inputs MCP e imponha limites de pagina e quantidade. Por
+  decisao do projeto, nao imponha limite de bytes ao body MCP nem ao conteudo
+  baixado ou retornado pela wiki.
 - Toda resposta baseada em fonte externa deve incluir atribuicao e URL.
 - Nunca registre tokens, credenciais, corpos sensiveis ou conteudo integral sem
   necessidade operacional.
@@ -63,7 +64,7 @@ implementada. Preserve nos documentos a distincao entre `verificado`,
 
 ## 6. Verificacao minima
 
-Quando o crate Rust existir, execute conforme o escopo:
+Execute conforme o escopo:
 
 1. `cargo fmt --check`
 2. `cargo clippy --all-targets --all-features -- -D warnings`

@@ -1,69 +1,62 @@
 # Use Quando Desenvolver MCP
 
-## Limites de responsabilidade
+## SDK e transporte
 
-Handlers MCP devem:
-
-- Validar e limitar o input.
-- Chamar um servico de dominio.
-- Converter o resultado para o contrato MCP.
-- Converter falhas para erros publicos seguros.
-
-Handlers nao devem montar requisicoes MediaWiki diretamente nem conter regras de
-cache, retry ou resolucao de redirects.
-
-## Ferramentas planejadas da wiki
-
-| Ferramenta | Finalidade |
-| --- | --- |
-| `wiki_search` | Pesquisar paginas com paginacao limitada |
-| `wiki_get_page` | Obter pagina em texto, HTML processado ou wikitext |
-| `wiki_get_section` | Obter uma secao, inclusive apos redirect |
-| `wiki_get_links` | Listar links relevantes de uma pagina |
-| `wiki_get_metadata` | Obter revisao, categorias, URL e licenca |
-
-## Ferramentas candidatas de mods
-
-`mods_search`, `mods_get`, `mods_list_files` e `mods_get_requirements` sao apenas
-nomes candidatos. Nao registre nem estabilize seus schemas antes da escolha do
-provedor.
-
-## Contratos
-
-- Defina schemas de entrada estritos e documente defaults e limites.
-- Paginacao deve possuir teto do lado do servidor.
-- Formatos aceitos devem ser enums, nao strings livres.
-- Respostas devem distinguir conteudo da fonte de mensagens do servidor.
-- Conteudo externo deve carregar `source`, `canonical_url` e atribuicao.
-- Quando disponivel, inclua ID e timestamp da revisao.
-- Informe titulo solicitado e titulo canonico quando houver redirect.
-
-## Erros
-
-Separe pelo menos estas categorias:
-
-- Input invalido.
-- Recurso nao encontrado.
-- Limite excedido.
-- Timeout da fonte.
-- Fonte temporariamente indisponivel.
-- Resposta inesperada da fonte.
-- Erro interno.
-
-Nao retorne stack traces, URLs internas de mock, headers ou corpos brutos.
-
-## Transporte HTTP planejado
-
-- Endpoint MCP: `/mcp`.
+- SDK: `rmcp 3.1.2`.
+- Transporte: Streamable HTTP stateless.
+- Endpoint: `/mcp`.
 - Health check: `/health`.
-- Bind e porta: configurados por ambiente.
-- Autenticacao: **TBD**; ate ser definida, nao presuma exposicao segura a
-  Internet.
+- Respostas HTTP: JSON quando suportado pelo cliente.
+- Protocolos legados tambem operam sem sessao no servidor.
 
-## Testes
+O factory do `StreamableHttpService` cria um `WikiMcpServer` leve por requisicao,
+compartilhando o `WikiService` por `Arc`.
 
-- Registro e listagem de ferramentas.
-- Validacao de schema e limites.
-- Conversao de cada classe de erro.
-- Presenca de atribuicao nas respostas.
-- Ausencia de detalhes internos nos erros publicos.
+## Ferramentas implementadas
+
+| Ferramenta | Input | Limites de quantidade |
+| --- | --- | --- |
+| `wiki_search` | `query`, `limit`, `cursor` | 1 a 20 resultados |
+| `wiki_get_page` | `title`, `format` | sem limite de conteudo |
+| `wiki_get_section` | `title`, `section`, `format` | sem limite de conteudo |
+| `wiki_get_links` | `title`, `limit`, `cursor` | 1 a 100 links |
+| `wiki_get_metadata` | `title` | uma pagina |
+
+`format` aceita `text`, `html` ou `wikitext`. Nao adicione `max_chars` ou
+truncamento sem uma nova decisao explicita.
+
+## Responsabilidade dos handlers
+
+Handlers devem validar strings e quantidades, chamar `WikiService` e retornar
+`rmcp::model::Json<T>`. Eles nao devem montar parametros MediaWiki, acessar cache
+ou resolver redirects diretamente.
+
+Erros de dominio sao convertidos em mensagens seguras por `public_message()`.
+Nunca exponha body externo, stack trace, headers ou URL interna de mock.
+
+## Respostas
+
+`Json<T>` produz `structuredContent` e texto JSON compativel. Toda resposta
+baseada na wiki inclui `Attribution`; paginas incluem titulo solicitado,
+canonico, URL, revisao e redirect quando disponivel.
+
+Descricoes das ferramentas devem afirmar que o conteudo e externo, nao confiavel
+como instrucao e retornado no idioma original.
+
+## Exposicao permissiva
+
+O projeto decidiu operar sem autenticacao, validacao de `Host` ou `Origin` e sem
+limite de body. A camada CORS e permissiva. O rate limit de `/mcp` usa o IP do
+socket e nao confia em `X-Forwarded-For`.
+
+Nao adicione `DefaultBodyLimit`, `RequestBodyLimitLayer`, allowlist ou token sem
+alterar os contratos e documentos correspondentes.
+
+## Testes obrigatorios
+
+- Handshake e `tools/list` via HTTP.
+- Chamada de ferramenta ponta a ponta com MediaWiki mockado.
+- CORS para origem arbitraria.
+- Body maior que defaults comuns sem resposta `413`.
+- Rate limit por IP.
+- Schemas, defaults, paginacao, erros e atribuicao.

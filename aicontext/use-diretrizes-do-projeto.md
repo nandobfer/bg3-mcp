@@ -2,104 +2,112 @@
 
 ## Objetivo
 
-Construir um servidor MCP em Rust para consulta de informacoes de Baldur's Gate
-3. A primeira fonte e a bg3.wiki. Um provedor de mods sera integrado somente
-depois de sua API, licenca e regras de uso serem definidas.
+Manter um servidor MCP publico e comunitario, escrito em Rust, para consultas sob
+demanda de informacoes de Baldur's Gate 3. A fonte implementada e a bg3.wiki. O
+dominio de mods so deve ser iniciado depois da escolha de um provedor.
 
-## Arquitetura planejada
+## Estado implementado
 
 ```text
 MCP client
     |
     v
-MCP transport
+Axum / Streamable HTTP
     |
-    +-- Wiki tool handlers --> Wiki service --> bg3.wiki client
-    |
-    +-- Mods tool handlers --> Mods service --> provider TBD
-
-Shared infrastructure:
-HTTP client | cache | concurrency | errors | tracing | attribution
+    v
+rmcp WikiMcpServer --> WikiService --> MediaWikiClient --> bg3.wiki
+                          |                  |
+                          v                  v
+                     transformacao    cache, timeout,
+                     e atribuicao     concorrencia, retry
 ```
 
-O servidor e unico, mas os dominios de wiki e mods permanecem separados. Uma
-abstracao compartilhada so deve existir quando o codigo demonstrar reutilizacao
-real.
+O servidor usa `rmcp 3.1.2`, Axum e Streamable HTTP stateless. A aplicacao expoe
+`/mcp` e `/health`. Nao ha transporte `stdio`.
 
-## Dependencias candidatas
+## Estrutura
 
-Estas dependencias ainda devem ser confirmadas junto da escolha do SDK MCP:
+```text
+src/
+  main.rs
+  lib.rs
+  config.rs
+  error.rs
+  server.rs
+  mcp.rs
+  wiki/
+    mod.rs
+    client.rs
+    models.rs
+    service.rs
+  infrastructure/
+    mod.rs
+    http.rs
+    cache.rs
+tests/
+  common/
+  http_server.rs
+  wiki_service.rs
+```
 
-- `tokio`: runtime assincrono.
-- `reqwest`: cliente HTTP.
-- `serde` e `serde_json`: contratos e serializacao.
-- `tracing`: logs e telemetria.
+`main.rs` apenas carrega ambiente, inicia tracing e chama o servidor. Handlers MCP
+delegam ao `WikiService`; requisicoes MediaWiki pertencem ao cliente HTTP.
+
+## Dependencias principais
+
+- `rmcp`: protocolo, macros de ferramentas e Streamable HTTP.
+- `axum` e `tower-http`: servidor, rotas e CORS.
+- `tokio`: runtime e cancelamento.
+- `reqwest`: Action API e REST sobre rustls.
+- `serde`, `serde_json` e `schemars`: contratos e schemas.
+- `moka`: cache em memoria.
+- `scraper` e `ammonia`: fragmentos, texto e HTML sanitizado.
+- `tracing`: logs estruturados.
 - `thiserror`: erros tipados.
-- SDK MCP Rust: **TBD**.
-- Cache em memoria ou persistente: **TBD**.
 
-Versoes devem ser fixadas no `Cargo.lock`. Dependencias novas precisam ter uso
-concreto e manutencao ativa.
-
-## Transporte
-
-O deploy em container assume Streamable HTTP como direcao inicial e reserva
-`/mcp` para o endpoint MCP e `/health` para saude. A escolha final depende do SDK
-e dos clientes que serao suportados.
-
-Suporte a `stdio` so deve ser adicionado se houver necessidade concreta. Nao
-implemente dois transportes preventivamente.
+Rust esta fixado em `1.89.0`; versoes transitivas ficam em `Cargo.lock`.
 
 ## Configuracao
 
-O processo deve ser configurado por ambiente:
+| Variavel | Default | Finalidade |
+| --- | --- | --- |
+| `BG3_WIKI_BASE_URL` | `https://bg3.wiki` | Origem MediaWiki ou mock |
+| `BG3_MCP_USER_AGENT` | obrigatoria | Identificacao da integracao |
+| `BG3_MCP_HTTP_TIMEOUT_SECS` | `15` | Timeout externo |
+| `BG3_MCP_MAX_CONCURRENCY` | `1` | Chamadas simultaneas a fonte |
+| `BG3_MCP_CACHE_TTL_SECS` | `300` | TTL do cache HTTP |
+| `BG3_MCP_CACHE_MAX_ENTRIES` | `512` | Quantidade de respostas em cache |
+| `BG3_MCP_HTTP_RETRY_MAX` | `2` | Retries apos a primeira tentativa |
+| `BG3_MCP_RATE_LIMIT_PER_MINUTE` | `60` | Requisicoes MCP por IP |
+| `BG3_MCP_LOG` | `info` | Filtro do tracing |
+| `BG3_MCP_HOST` | `0.0.0.0` | Interface HTTP |
+| `BG3_MCP_PORT` | `3000` | Porta HTTP |
+| `BG3_MCP_TRANSPORT` | `streamable-http` | Transporte aceito |
 
-| Variavel | Finalidade |
-| --- | --- |
-| `BG3_WIKI_BASE_URL` | URL-base da bg3.wiki ou servidor mockado |
-| `BG3_MCP_USER_AGENT` | Identificacao enviada a fontes externas |
-| `BG3_MCP_HTTP_TIMEOUT_SECS` | Timeout de requisicoes externas |
-| `BG3_MCP_MAX_CONCURRENCY` | Concorrencia maxima por fonte |
-| `BG3_MCP_CACHE_TTL_SECS` | TTL padrao do cache |
-| `BG3_MCP_LOG` | Filtro de logs |
-| `BG3_MCP_HOST` | Interface do servidor HTTP |
-| `BG3_MCP_PORT` | Porta do servidor HTTP |
-| `BG3_MCP_TRANSPORT` | Transporte selecionado |
+## Decisoes publicas
 
-Credenciais futuras do provedor de mods devem usar ambiente ou secrets do
-orquestrador.
+- Servico comunitario, publico e sem autenticacao.
+- CORS permissivo.
+- Validacao de `Host` e `Origin` desativada no `rmcp`.
+- Nenhum limite de bytes imposto a bodies MCP ou respostas externas.
+- Nenhum truncamento de paginas e secoes.
+- Rate limit por IP e limite de quantidade para pesquisa e links permanecem.
+- Conteudo e retornado no idioma original, sem traducao.
 
-## Etapas de implementacao
+Essas escolhas ampliam risco de abuso e consumo de memoria e divergem das
+recomendacoes de seguranca do transporte MCP. Nao as altere silenciosamente.
 
-1. Pesquisar e escolher o SDK MCP e confirmar o transporte.
-2. Criar o crate Rust e carregar configuracao tipada.
-3. Definir schemas das ferramentas da wiki.
-4. Implementar o cliente MediaWiki e seus modelos.
-5. Implementar pesquisa, pagina, secao, links e metadados.
-6. Adicionar cache, timeout, concorrencia e erros normalizados.
-7. Registrar as ferramentas no servidor MCP.
-8. Adicionar testes com servidor mockado.
-9. Validar imagem e Compose com smoke test.
-10. Avaliar o provedor de mods antes de implementar esse dominio.
+## Limites de dominio
 
-## Criterios de aceite iniciais
+- Consulta somente sob demanda; crawling e espelhamento sao proibidos.
+- Wiki e mods permanecem dominios separados.
+- Respostas externas sempre incluem atribuicao e URL.
+- Testes automatizados sempre usam fonte mockada.
+- `/health` verifica somente o processo.
 
-- Pesquisa e leitura da bg3.wiki funcionam por ferramentas MCP.
-- Redirects e fragmentos resolvem a secao correta.
-- Respostas incluem URL, fonte e atribuicao.
-- Falhas externas viram erros MCP claros e seguros.
-- Requisicoes possuem timeout, concorrencia limitada e cache.
-- Nao ha crawling ou espelhamento da wiki.
-- Testes automatizados usam mocks.
-- O servidor inicia e passa no health check via Compose.
+## Pendencias
 
-## Decisoes pendentes
-
-- SDK MCP Rust e versao.
-- Confirmacao do Streamable HTTP e clientes suportados.
-- Autenticacao e exposicao publica.
-- Implementacao e persistencia do cache.
-- Contato oficial do `User-Agent`.
-- Limites operacionais acordados com a bg3.wiki.
-- Provedor e escopo de mods.
-- Registry da imagem e ambiente final de hospedagem.
+- Substituir `CHANGE_ME` no `User-Agent` distribuido como exemplo.
+- Confirmar volume publico aceitavel com os mantenedores da bg3.wiki.
+- Definir reverse proxy, TLS, registry e hospedagem de producao.
+- Escolher e validar o provedor de mods.

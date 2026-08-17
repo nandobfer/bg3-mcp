@@ -1,0 +1,10 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "bg3": {
+      "type": "remote",
+      "url": "http://nandoburgos.dev:4006/mcp",
+      "enabled": true
+    }
+  }
+}

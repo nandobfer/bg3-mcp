@@ -25,6 +25,4 @@ ENV BG3_MCP_PORT=3000
 
 USER bg3mcp
 
-EXPOSE 3000
-
 ENTRYPOINT ["/usr/local/bin/bg3-mcp"]

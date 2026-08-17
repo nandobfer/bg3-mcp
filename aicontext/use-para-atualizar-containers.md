@@ -15,8 +15,7 @@ outros containers sem necessidade concreta.
 - Execute como usuario sem privilegios.
 - Mantenha o comando final como o binario `bg3-mcp`.
 
-O build depende da existencia de `Cargo.toml`, `Cargo.lock`, `src/` e de um
-binario chamado `bg3-mcp`.
+O build usa `Cargo.toml`, `Cargo.lock`, `src/` e o binario `bg3-mcp` existentes.
 
 ## Compose
 
@@ -44,5 +43,4 @@ binario chamado `bg3-mcp`.
 4. Verificar o estado do health check.
 5. Fazer uma chamada MCP de smoke test.
 
-As etapas 2 a 5 so sao executaveis depois que o crate e o transporte HTTP forem
-implementados.
+As cinco etapas fazem parte da verificacao normal do projeto.

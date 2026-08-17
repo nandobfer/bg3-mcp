@@ -9,14 +9,14 @@ Verifique e documente:
 - Rate limits e politica de uso automatizado.
 - Licenca e obrigacoes de atribuicao.
 - Paginacao, IDs estaveis e formatos de erro.
-- Timeouts, limites de tamanho e comportamento de retry.
+- Timeouts, volume esperado e comportamento de retry.
 
 ## Cliente
 
 - Use uma URL-base configuravel.
 - Reutilize conexoes por meio de um cliente compartilhado.
 - Envie `User-Agent` identificavel.
-- Aplique timeout e limite de tamanho de resposta.
+- Aplique timeout. Neste projeto, nao imponha limite de tamanho de resposta.
 - Limite concorrencia por fonte.
 - Trate status HTTP antes de desserializar sucesso.
 - Desserialize para tipos locais; nao espalhe JSON generico pelo dominio.
@@ -31,7 +31,8 @@ devem ser repetidos automaticamente.
 ## Conteudo nao confiavel
 
 - Sanitize snippets e HTML antes de retornar texto.
-- Limite tamanho antes e depois da transformacao.
+- Nao trunque conteudo antes ou depois da transformacao; documente o risco de
+  memoria associado.
 - Nao siga URLs arbitrarias vindas do cliente MCP.
 - Valide redirects para a origem esperada quando o cliente HTTP os seguir.
 

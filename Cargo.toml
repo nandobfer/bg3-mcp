@@ -1,0 +1,38 @@
+[package]
+name = "bg3-mcp"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.89"
+description = "Public community MCP server for Baldur's Gate 3 information"
+license = "MIT"
+repository = "https://github.com/nandobfer/bg3-mcp"
+
+[dependencies]
+ammonia = "4"
+axum = { version = "0.8", features = ["macros"] }
+dotenvy = "0.15"
+fastrand = "2"
+moka = { version = "0.12", features = ["future"] }
+percent-encoding = "2.3"
+reqwest = { version = "0.13.2", default-features = false, features = ["form", "gzip", "json", "rustls"] }
+rmcp = { version = "3.1.2", default-features = false, features = ["macros", "schemars", "server", "transport-streamable-http-server"] }
+schemars = "1"
+scraper = "0.24"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tokio = { version = "1", features = ["macros", "net", "rt-multi-thread", "signal", "sync", "time"] }
+tokio-util = "0.7"
+tower-http = { version = "0.7", features = ["cors"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
+url = "2.5"
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }
+wiremock = "0.6"
+
+[profile.release]
+strip = true
+lto = "thin"
+codegen-units = 1

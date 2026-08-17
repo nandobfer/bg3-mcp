@@ -10,21 +10,22 @@
 - Mantenha clientes externos isolados das representacoes do protocolo MCP.
 - Nao esconda estado pendente: use `TBD` em vez de inventar contratos.
 
-## Estrutura planejada
+## Estrutura atual
 
 ```text
 src/
   main.rs
+  lib.rs
+  server.rs
   config.rs
   error.rs
-  mcp/
+  mcp.rs
   wiki/
-  mods/
   infrastructure/
 ```
 
-Essa estrutura e uma direcao, nao uma obrigacao de criar arquivos vazios. O
-projeto deve iniciar menor e crescer junto com o codigo.
+O dominio de mods ainda nao possui codigo. Crie modulos novos somente quando
+houver implementacao concreta.
 
 ## Rust
 
@@ -40,7 +41,8 @@ projeto deve iniciar menor e crescer junto com o codigo.
 - Teste comportamento e contratos publicos.
 - Use servidor HTTP mockado para Action API, REST, `429`, `5xx` e timeouts.
 - Cubra redirecionamentos com e sem fragmentos.
-- Cubra limites de pagina, tamanho de resposta e inputs invalidos.
+- Cubra limites de pagina e quantidade, inputs invalidos e a ausencia deliberada
+  de limite de bytes para bodies e conteudo.
 - Separe testes externos manuais dos testes automatizados.
 
 ## Seguranca e privacidade
@@ -53,7 +55,7 @@ projeto deve iniciar menor e crescer junto com o codigo.
 
 ## Checklist de encerramento
 
-1. O input e limitado e validado.
+1. O input e validado e respeita os limites de pagina e quantidade aplicaveis.
 2. Falhas externas sao normalizadas.
 3. A resposta inclui fonte e atribuicao quando aplicavel.
 4. Testes foram adicionados ou a ausencia foi justificada.

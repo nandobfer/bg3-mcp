@@ -6,8 +6,9 @@ voltado ao usuario final.
 
 ## Estado da documentacao
 
-Os documentos usam tres estados:
+Os documentos usam quatro estados:
 
+- **Implementado**: comportamento presente no codigo e coberto por teste.
 - **Verificado**: comportamento observado diretamente na fonte.
 - **Planejado**: decisao de produto ou engenharia ainda nao implementada.
 - **TBD**: depende de pesquisa, escolha tecnica ou informacao externa.
@@ -28,7 +29,7 @@ Documentacao planejada nao prova que o codigo correspondente existe.
 | `use-sempre-que-desenvolver.md` | Toda alteracao de codigo |
 | `use-diretrizes-do-projeto.md` | Arquitetura, dependencias e decisoes tecnicas |
 | `use-quando-desenvolver-mcp.md` | Ferramentas, transporte e erros MCP |
-| `use-quando-integrar-fontes-http.md` | Clientes HTTP, limites e novas fontes |
+| `use-quando-integrar-fontes-http.md` | Clientes HTTP, resiliencia e novas fontes |
 | `use-para-atualizar-containers.md` | Dockerfile, Compose e ambiente |
 
 ## Modulos
