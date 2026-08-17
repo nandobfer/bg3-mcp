@@ -2,10 +2,11 @@
 
 Servidor [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) publico
 e comunitario para consultar informacoes de Baldur's Gate 3 na
-[bg3.wiki](https://bg3.wiki/).
+[bg3.wiki](https://bg3.wiki/) e mods publicados no
+[mod.io](https://mod.io/g/baldursgate3).
 
 O projeto e gratuito, open source e nao oficial. Ele nao e afiliado a Larian
-Studios nem a equipe da bg3.wiki.
+Studios, a equipe da bg3.wiki ou ao mod.io.
 
 ## O que ele oferece
 
@@ -15,6 +16,8 @@ Studios nem a equipe da bg3.wiki.
 - Listagem paginada de links internos.
 - Consulta de revisoes, categorias, URL canonica e licenca.
 - Respostas estruturadas com atribuicao da fonte.
+- Pesquisa, listagem e consulta de mods do catalogo oficial do mod.io.
+- Filtro dos mods por plataforma, sem download ou instalacao.
 
 O servidor retorna o conteudo no idioma original da wiki. A formulacao ou
 traducao da resposta em linguagem natural cabe ao cliente MCP conectado.
@@ -28,10 +31,13 @@ traducao da resposta em linguagem natural cabe ao cliente MCP conectado.
 | `wiki_get_section` | Obter uma secao ou fragment especifico |
 | `wiki_get_links` | Listar links internos de uma pagina |
 | `wiki_get_metadata` | Obter revisao, categorias, URL e licenca |
+| `mods_search` | Listar ou pesquisar mods com paginacao, plataforma e ordenacao |
+| `mods_get` | Consultar os metadados de um mod pelo ID numerico |
 
 ## Executar com Docker Compose
 
-1. Edite `.env` e substitua `CHANGE_ME` por um email ou URL de contato.
+1. Copie `.env.example` para `.env` e substitua os valores `CHANGE_ME` pelo
+   contato do `User-Agent`, API path e API key fornecidos pelo mod.io.
 2. Escolha a porta em `BG3_MCP_PORT`.
 3. Inicie o servidor:
 
@@ -93,10 +99,10 @@ automaticamente em headers encaminhados.
 
 ## Uso responsavel
 
-O servidor faz consultas sob demanda e nao rastreia nem espelha integralmente a
-wiki. O conteudo pertence aos respectivos autores e esta sujeito as licencas e
-regras da [bg3.wiki](https://bg3.wiki/). Cada resposta inclui a fonte e a URL de
-licenca.
+O servidor faz consultas sob demanda e nao rastreia nem espelha integralmente as
+fontes. O conteudo pertence aos respectivos autores e esta sujeito as regras da
+[bg3.wiki](https://bg3.wiki/) e aos [termos do mod.io](https://mod.io/terms).
+Cada resposta inclui atribuicao e URLs da fonte.
 
 ## Fora do escopo
 

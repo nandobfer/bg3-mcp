@@ -21,11 +21,12 @@ src/
   error.rs
   mcp.rs
   wiki/
+  mods/
   infrastructure/
 ```
 
-O dominio de mods ainda nao possui codigo. Crie modulos novos somente quando
-houver implementacao concreta.
+Wiki e mods possuem clientes, modelos e servicos separados. Nao introduza uma
+abstracao comum sem reutilizacao concreta.
 
 ## Rust
 

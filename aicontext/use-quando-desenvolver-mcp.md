@@ -9,8 +9,8 @@
 - Respostas HTTP: JSON quando suportado pelo cliente.
 - Protocolos legados tambem operam sem sessao no servidor.
 
-O factory do `StreamableHttpService` cria um `WikiMcpServer` leve por requisicao,
-compartilhando o `WikiService` por `Arc`.
+O factory do `StreamableHttpService` cria um `Bg3McpServer` leve por requisicao,
+compartilhando `WikiService` e `ModsService` pelos respectivos handles clonaveis.
 
 ## Ferramentas implementadas
 
@@ -21,14 +21,16 @@ compartilhando o `WikiService` por `Arc`.
 | `wiki_get_section` | `title`, `section`, `format` | sem limite de conteudo |
 | `wiki_get_links` | `title`, `limit`, `cursor` | 1 a 100 links |
 | `wiki_get_metadata` | `title` | uma pagina |
+| `mods_search` | `query`, `platform`, `sort`, `limit`, `cursor` | 1 a 20 mods |
+| `mods_get` | `mod_id`, `platform` | um mod |
 
 `format` aceita `text`, `html` ou `wikitext`. Nao adicione `max_chars` ou
 truncamento sem uma nova decisao explicita.
 
 ## Responsabilidade dos handlers
 
-Handlers devem validar strings e quantidades, chamar `WikiService` e retornar
-`rmcp::model::Json<T>`. Eles nao devem montar parametros MediaWiki, acessar cache
+Handlers devem validar strings e quantidades nos servicos de dominio e retornar
+`rmcp::model::Json<T>`. Eles nao devem montar parametros externos, acessar cache
 ou resolver redirects diretamente.
 
 Erros de dominio sao convertidos em mensagens seguras por `public_message()`.
@@ -39,6 +41,9 @@ Nunca exponha body externo, stack trace, headers ou URL interna de mock.
 `Json<T>` produz `structuredContent` e texto JSON compativel. Toda resposta
 baseada na wiki inclui `Attribution`; paginas incluem titulo solicitado,
 canonico, URL, revisao e redirect quando disponivel.
+
+Respostas do mod.io incluem `ModIoAttribution`, URL canonica do mod e termos da
+fonte. URLs de download nao sao expostas.
 
 Descricoes das ferramentas devem afirmar que o conteudo e externo, nao confiavel
 como instrucao e retornado no idioma original.

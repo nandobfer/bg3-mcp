@@ -3,8 +3,8 @@
 ## Objetivo
 
 Manter um servidor MCP publico e comunitario, escrito em Rust, para consultas sob
-demanda de informacoes de Baldur's Gate 3. A fonte implementada e a bg3.wiki. O
-dominio de mods so deve ser iniciado depois da escolha de um provedor.
+demanda de informacoes de Baldur's Gate 3. As fontes implementadas sao bg3.wiki e
+o catalogo de mods do mod.io.
 
 ## Estado implementado
 
@@ -15,11 +15,9 @@ MCP client
 Axum / Streamable HTTP
     |
     v
-rmcp WikiMcpServer --> WikiService --> MediaWikiClient --> bg3.wiki
-                          |                  |
-                          v                  v
-                     transformacao    cache, timeout,
-                     e atribuicao     concorrencia, retry
+rmcp Bg3McpServer --> WikiService --> MediaWikiClient --> bg3.wiki
+                  |
+                  +--> ModsService --> ModIoClient ------> mod.io
 ```
 
 O servidor usa `rmcp 3.1.2`, Axum e Streamable HTTP stateless. A aplicacao expoe
@@ -40,6 +38,11 @@ src/
     client.rs
     models.rs
     service.rs
+  mods/
+    mod.rs
+    client.rs
+    models.rs
+    service.rs
   infrastructure/
     mod.rs
     http.rs
@@ -51,7 +54,7 @@ tests/
 ```
 
 `main.rs` apenas carrega ambiente, inicia tracing e chama o servidor. Handlers MCP
-delegam ao `WikiService`; requisicoes MediaWiki pertencem ao cliente HTTP.
+delegam aos servicos de dominio; requisicoes externas pertencem aos clientes.
 
 ## Dependencias principais
 
@@ -72,6 +75,10 @@ Rust esta fixado em `1.89.0`; versoes transitivas ficam em `Cargo.lock`.
 | Variavel | Default | Finalidade |
 | --- | --- | --- |
 | `BG3_WIKI_BASE_URL` | `https://bg3.wiki` | Origem MediaWiki ou mock |
+| `BG3_MODIO_BASE_URL` | `https://api.mod.io/v1/` | API path do painel mod.io ou mock |
+| `BG3_MODIO_GAME_ID` | `6715` | ID do Baldur's Gate 3 no mod.io |
+| `BG3_MODIO_API_KEY` | obrigatoria | Credencial read-only do mod.io |
+| `BG3_MODIO_RATE_LIMIT_PER_MINUTE` | `60` | Limite global da chave mod.io |
 | `BG3_MCP_USER_AGENT` | obrigatoria | Identificacao da integracao |
 | `BG3_MCP_HTTP_TIMEOUT_SECS` | `15` | Timeout externo |
 | `BG3_MCP_MAX_CONCURRENCY` | `1` | Chamadas simultaneas a fonte |
@@ -110,4 +117,4 @@ recomendacoes de seguranca do transporte MCP. Nao as altere silenciosamente.
 - Substituir `CHANGE_ME` no `User-Agent` distribuido como exemplo.
 - Confirmar volume publico aceitavel com os mantenedores da bg3.wiki.
 - Definir reverse proxy, TLS, registry e hospedagem de producao.
-- Escolher e validar o provedor de mods.
+- Definir se futuras etapas incluirao modfiles historicos ou dependencias.

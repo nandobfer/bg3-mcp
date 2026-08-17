@@ -24,13 +24,15 @@ Ferramentas registradas:
 - `wiki_get_section`
 - `wiki_get_links`
 - `wiki_get_metadata`
+- `mods_search`
+- `mods_get`
 
 ## Ciclo de requisicao
 
 1. Axum aplica CORS e rate limit.
 2. `StreamableHttpService` processa o JSON-RPC sem sessao persistente.
 3. O macro `#[tool_router]` valida o shape do schema.
-4. O handler aplica validacao semantica e chama `WikiService`.
+4. O handler aplica validacao semantica e chama `WikiService` ou `ModsService`.
 5. `Json<T>` retorna conteudo estruturado e textual.
 
 Antes da publicacao, os schemas gerados sao normalizados para remover formatos
@@ -55,4 +57,4 @@ operador deve usar TLS, monitoramento e protecoes externas quando necessario.
 - Transporte `stdio`.
 - Estado de sessao persistente.
 - Escrita ou operacoes autenticadas na wiki.
-- Ferramentas de mods.
+- Downloads, instalacao ou operacoes autenticadas do mod.io.

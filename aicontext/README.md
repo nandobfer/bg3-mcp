@@ -37,7 +37,7 @@ Documentacao planejada nao prova que o codigo correspondente existe.
 | Arquivo | Conteudo |
 | --- | --- |
 | `modules/wiki.md` | Contrato e descobertas da bg3.wiki |
-| `modules/mods.md` | Requisitos pendentes para o provedor de mods |
+| `modules/mods.md` | Contrato e integracao de leitura com o mod.io |
 | `modules/mcp.md` | Superficie de ferramentas e transporte |
 | `modules/infrastructure.md` | HTTP, cache, concorrencia, erros e tracing |
 

@@ -3,13 +3,17 @@ use std::{env, net::IpAddr, time::Duration};
 use thiserror::Error;
 use url::Url;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Config {
     pub host: IpAddr,
     pub port: u16,
     pub transport: String,
     pub log_filter: String,
     pub wiki_base_url: Url,
+    pub modio_base_url: Url,
+    pub modio_game_id: u64,
+    pub modio_api_key: String,
+    pub modio_rate_limit_per_minute: u32,
     pub user_agent: String,
     pub http_timeout: Duration,
     pub max_concurrency: usize,
@@ -39,19 +43,11 @@ impl Config {
             });
         }
 
-        let wiki_base_url =
-            Url::parse(&value("BG3_WIKI_BASE_URL", "https://bg3.wiki")).map_err(|error| {
-                ConfigError::Invalid {
-                    name: "BG3_WIKI_BASE_URL",
-                    message: error.to_string(),
-                }
-            })?;
-        if !matches!(wiki_base_url.scheme(), "http" | "https") {
-            return Err(ConfigError::Invalid {
-                name: "BG3_WIKI_BASE_URL",
-                message: "scheme must be http or https".to_string(),
-            });
-        }
+        let wiki_base_url = parse_url("BG3_WIKI_BASE_URL", "https://bg3.wiki")?;
+        let modio_base_url = parse_url("BG3_MODIO_BASE_URL", "https://api.mod.io/v1/")?;
+        let modio_game_id = nonzero_parse("BG3_MODIO_GAME_ID", "6715")?;
+        let modio_api_key = required("BG3_MODIO_API_KEY")?;
+        let modio_rate_limit_per_minute = nonzero_parse("BG3_MODIO_RATE_LIMIT_PER_MINUTE", "60")?;
 
         let user_agent = required("BG3_MCP_USER_AGENT")?;
         let timeout_secs = nonzero_parse("BG3_MCP_HTTP_TIMEOUT_SECS", "15")?;
@@ -67,6 +63,10 @@ impl Config {
             transport,
             log_filter: value("BG3_MCP_LOG", "info"),
             wiki_base_url,
+            modio_base_url,
+            modio_game_id,
+            modio_api_key,
+            modio_rate_limit_per_minute,
             user_agent,
             http_timeout: Duration::from_secs(timeout_secs),
             max_concurrency,
@@ -95,6 +95,20 @@ fn required(name: &'static str) -> Result<String, ConfigError> {
         });
     }
     Ok(value)
+}
+
+fn parse_url(name: &'static str, default: &str) -> Result<Url, ConfigError> {
+    let url = Url::parse(&value(name, default)).map_err(|error| ConfigError::Invalid {
+        name,
+        message: error.to_string(),
+    })?;
+    if !matches!(url.scheme(), "http" | "https") {
+        return Err(ConfigError::Invalid {
+            name,
+            message: "scheme must be http or https".to_string(),
+        });
+    }
+    Ok(url)
 }
 
 fn parse<T>(name: &'static str, default: &str) -> Result<T, ConfigError>
@@ -137,6 +151,10 @@ mod tests {
             transport: "streamable-http".to_string(),
             log_filter: "info".to_string(),
             wiki_base_url: Url::parse("https://bg3.wiki").unwrap(),
+            modio_base_url: Url::parse("https://api.mod.io/v1/").unwrap(),
+            modio_game_id: 6715,
+            modio_api_key: "test-key".to_string(),
+            modio_rate_limit_per_minute: 60,
             user_agent: "test".to_string(),
             http_timeout: Duration::from_secs(1),
             max_concurrency: 1,

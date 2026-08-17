@@ -84,7 +84,7 @@ async fn mcp_route_has_no_application_body_limit() {
 }
 
 #[tokio::test]
-async fn mcp_lists_all_wiki_tools() {
+async fn mcp_lists_all_tools() {
     let router =
         build_router(&test_config("http://127.0.0.1:9"), CancellationToken::new()).unwrap();
     let initialize = json!({
@@ -165,12 +165,14 @@ async fn mcp_lists_all_wiki_tools() {
         .iter()
         .filter_map(|tool| tool["name"].as_str())
         .collect::<Vec<_>>();
-    assert_eq!(names.len(), 5);
+    assert_eq!(names.len(), 7);
     assert!(names.contains(&"wiki_search"));
     assert!(names.contains(&"wiki_get_page"));
     assert!(names.contains(&"wiki_get_section"));
     assert!(names.contains(&"wiki_get_links"));
     assert!(names.contains(&"wiki_get_metadata"));
+    assert!(names.contains(&"mods_search"));
+    assert!(names.contains(&"mods_get"));
 }
 
 #[tokio::test]
@@ -243,6 +245,82 @@ async fn mcp_search_tool_returns_structured_attributed_content() {
     assert_eq!(
         payload["result"]["structuredContent"]["attribution"]["name"],
         "bg3.wiki"
+    );
+}
+
+#[tokio::test]
+async fn mcp_mods_search_returns_structured_attributed_content() {
+    let modio = MockServer::start().await;
+    Mock::given(method("GET"))
+        .and(path("/games/6715/mods"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!({
+            "data": [{
+                "id": 42,
+                "name": "Better Dice",
+                "name_id": "better-dice",
+                "summary": "Better looking dice.",
+                "description_plaintext": "Better looking dice.",
+                "profile_url": "https://mod.io/g/baldursgate3/m/better-dice",
+                "platforms": [{"platform": "windows"}],
+                "tags": [],
+                "stats": {}
+            }],
+            "result_count": 1,
+            "result_offset": 0,
+            "result_limit": 1,
+            "result_total": 1
+        })))
+        .mount(&modio)
+        .await;
+    let router = build_router(&test_config(&modio.uri()), CancellationToken::new()).unwrap();
+    let initialize = json!({
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "initialize",
+        "params": {
+            "protocolVersion": "2025-11-25",
+            "capabilities": {},
+            "clientInfo": {"name": "integration-test", "version": "1.0.0"}
+        }
+    });
+    let initialize_response = router
+        .clone()
+        .oneshot(mcp_request(initialize, false))
+        .await
+        .unwrap();
+    assert_eq!(initialize_response.status(), StatusCode::OK);
+
+    let call = json!({
+        "jsonrpc": "2.0",
+        "id": 2,
+        "method": "tools/call",
+        "params": {
+            "name": "mods_search",
+            "arguments": {"query": "dice", "limit": 1},
+            "_meta": {
+                "protocolVersion": "2025-11-25",
+                "clientInfo": {"name": "integration-test", "version": "1.0.0"},
+                "capabilities": {}
+            }
+        }
+    });
+    let response = router.oneshot(mcp_request(call, true)).await.unwrap();
+    let status = response.status();
+    let body = to_bytes(response.into_body(), usize::MAX).await.unwrap();
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "unexpected response: {}",
+        String::from_utf8_lossy(&body)
+    );
+    let payload: Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(
+        payload["result"]["structuredContent"]["results"][0]["name"],
+        "Better Dice"
+    );
+    assert_eq!(
+        payload["result"]["structuredContent"]["attribution"]["name"],
+        "mod.io"
     );
 }
 

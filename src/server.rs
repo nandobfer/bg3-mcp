@@ -22,7 +22,9 @@ use tokio_util::sync::CancellationToken;
 use tower_http::cors::CorsLayer;
 use tracing::info;
 
-use crate::{config::Config, error::AppError, mcp::WikiMcpServer, wiki::WikiService};
+use crate::{
+    config::Config, error::AppError, mcp::Bg3McpServer, mods::ModsService, wiki::WikiService,
+};
 
 pub async fn run(config: Config) -> Result<(), AppError> {
     let cancellation = CancellationToken::new();
@@ -49,7 +51,13 @@ pub async fn run(config: Config) -> Result<(), AppError> {
 
 pub fn build_router(config: &Config, cancellation: CancellationToken) -> Result<Router, AppError> {
     let wiki_service = WikiService::from_config(config)?;
-    let service_factory = move || Ok(WikiMcpServer::new(wiki_service.clone()));
+    let mods_service = ModsService::from_config(config)?;
+    let service_factory = move || {
+        Ok(Bg3McpServer::new(
+            wiki_service.clone(),
+            mods_service.clone(),
+        ))
+    };
     let mcp_config = StreamableHttpServerConfig::default()
         .with_legacy_session_mode(false)
         .with_json_response(true)

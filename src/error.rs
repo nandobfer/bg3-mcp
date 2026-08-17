@@ -28,7 +28,31 @@ pub enum WikiError {
     UnexpectedResponse,
 }
 
+#[derive(Debug, Error, Clone)]
+pub enum ModIoError {
+    #[error("invalid input: {0}")]
+    InvalidInput(String),
+    #[error("mod not found")]
+    NotFound,
+    #[error("mod.io timed out")]
+    Timeout,
+    #[error("mod.io is temporarily unavailable")]
+    Unavailable,
+    #[error("mod.io credentials were rejected")]
+    Unauthorized,
+    #[error("mod.io rejected the request")]
+    Rejected,
+    #[error("mod.io returned an unexpected response")]
+    UnexpectedResponse,
+}
+
 impl WikiError {
+    pub fn public_message(&self) -> String {
+        self.to_string()
+    }
+}
+
+impl ModIoError {
     pub fn public_message(&self) -> String {
         self.to_string()
     }
